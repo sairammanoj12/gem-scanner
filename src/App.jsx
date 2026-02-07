@@ -9,15 +9,22 @@ export default function App() {
   const fetchGems = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('https://api.dexscreener.com/token-profiles/latest/v1');
-      setPairs(res.data.slice(0, 15)); // Increased to 15 to fill more space
+      // The ?t=${Date.now()} ensures the browser doesn't show "old" cached data
+      const res = await axios.get(`https://api.dexscreener.com/token-profiles/latest/v1?t=${Date.now()}`);
+      
+      // Filter out any entries that might be missing critical data
+      const validData = res.data.filter(item => item.tokenAddress);
+      
+      setPairs(validData.slice(0, 15));
       setLoading(false);
+      console.log("Data Refreshed:", new Date().toLocaleTimeString());
     } catch (err) {
-      console.error("DEX_SCAN_FAILED");
+      console.error("DEX_SCAN_FAILED", err);
       setLoading(false);
     }
   };
 
+  // Run once when the app starts
   useEffect(() => {
     fetchGems();
   }, []);
@@ -27,7 +34,7 @@ export default function App() {
       backgroundColor: '#0f172a', 
       color: '#f8fafc', 
       minHeight: '100vh', 
-      width: '100vw', // Force full width
+      width: '100vw', 
       fontFamily: '"Inter", sans-serif', 
       padding: '40px',
       display: 'flex',
@@ -54,19 +61,29 @@ export default function App() {
         
         <button 
           onClick={fetchGems}
+          disabled={loading}
           style={{ 
-            backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '14px 32px', 
-            fontWeight: '600', cursor: 'pointer', borderRadius: '12px',
-            display: 'inline-flex', alignItems: 'center', gap: '10px',
-            transition: 'all 0.2s', boxShadow: '0 10px 15px -3px rgba(16, 185, 129, 0.2)'
+            backgroundColor: loading ? '#334155' : '#10b981', 
+            color: '#fff', 
+            border: 'none', 
+            padding: '14px 32px', 
+            fontWeight: '600', 
+            cursor: loading ? 'not-allowed' : 'pointer', 
+            borderRadius: '12px',
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '10px',
+            transition: 'all 0.2s', 
+            boxShadow: loading ? 'none' : '0 10px 15px -3px rgba(16, 185, 129, 0.2)'
           }}
         >
-          <RefreshCcw size={18} /> LIVE_UPDATE
+          <RefreshCcw size={18} className={loading ? "animate-spin" : ""} /> 
+          {loading ? 'SYNCING...' : 'LIVE_UPDATE'}
         </button>
       </header>
 
       {/* FULL-SCREEN DATA GRID */}
-      {loading ? (
+      {loading && pairs.length === 0 ? (
         <div style={{ textAlign: 'center', marginTop: '100px', color: '#64748b' }}>
           <Zap size={40} style={{ marginBottom: '20px' }} />
           <p>SYNCHRONIZING WITH MAINNET...</p>
@@ -74,9 +91,9 @@ export default function App() {
       ) : (
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', // auto-fill to take up all space
+          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', 
           gap: '20px',
-          width: '100%', // Full width of the container
+          width: '100%', 
           flexGrow: 1
         }}>
           {pairs.map((token, index) => (
@@ -87,7 +104,8 @@ export default function App() {
               border: '1px solid #334155',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              transition: 'transform 0.2s'
             }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
@@ -97,7 +115,7 @@ export default function App() {
                     <div style={{ width: '56px', height: '56px', backgroundColor: '#334155', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>?</div>
                   )}
                   <div>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', margin: 0 }}>{token.chainId.toUpperCase()}</h2>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', margin: 0 }}>{token.chainId?.toUpperCase() || 'SOLANA'}</h2>
                     <span style={{ fontSize: '0.875rem', color: '#10b981', fontWeight: '500' }}>NEW_LISTING</span>
                   </div>
                   <div style={{ marginLeft: 'auto', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '6px', borderRadius: '8px' }}>
