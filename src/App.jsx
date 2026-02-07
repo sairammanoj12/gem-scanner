@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Radio, Flame, ShieldCheck, ExternalLink, RefreshCcw, Zap, BarChart3 } from 'lucide-react';
+import { Flame, ShieldCheck, ExternalLink, RefreshCcw, Zap, Diamond } from 'lucide-react';
 
 export default function App() {
   const [pairs, setPairs] = useState([]);
@@ -9,22 +9,20 @@ export default function App() {
   const fetchGems = async () => {
     setLoading(true);
     try {
-      // The ?t=${Date.now()} ensures the browser doesn't show "old" cached data
+      // ?t= forces a fresh fetch from DexScreener every time
       const res = await axios.get(`https://api.dexscreener.com/token-profiles/latest/v1?t=${Date.now()}`);
       
-      // Filter out any entries that might be missing critical data
+      // Filter out any tokens that don't have an address
       const validData = res.data.filter(item => item.tokenAddress);
       
       setPairs(validData.slice(0, 15));
       setLoading(false);
-      console.log("Data Refreshed:", new Date().toLocaleTimeString());
     } catch (err) {
       console.error("DEX_SCAN_FAILED", err);
       setLoading(false);
     }
   };
 
-  // Run once when the app starts
   useEffect(() => {
     fetchGems();
   }, []);
@@ -43,18 +41,23 @@ export default function App() {
       boxSizing: 'border-box'
     }}>
       
-      {/* ELITE HEADER */}
-      <header style={{ 
-        textAlign: 'center', 
-        marginBottom: '50px', 
-        width: '100%' 
-      }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-          <BarChart3 size={32} color="#10b981" />
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-0.025em', margin: 0 }}>
+      {/* HEADER SECTION WITH CUSTOM LOGO */}
+      <header style={{ textAlign: 'center', marginBottom: '50px', width: '100%' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+          <img 
+            src="/vite.svg" 
+            style={{ 
+              width: '55px', 
+              height: '55px', 
+              filter: 'drop-shadow(0 0 10px rgba(16, 185, 129, 0.4))' 
+            }} 
+            alt="Logo" 
+          />
+          <h1 style={{ fontSize: '2.8rem', fontWeight: '900', letterSpacing: '-0.05em', margin: 0 }}>
             GEM<span style={{ color: '#10b981' }}>SCANNER</span>
           </h1>
         </div>
+        
         <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginBottom: '32px' }}>
           Professional-grade token discovery for the Solana ecosystem.
         </p>
@@ -77,16 +80,16 @@ export default function App() {
             boxShadow: loading ? 'none' : '0 10px 15px -3px rgba(16, 185, 129, 0.2)'
           }}
         >
-          <RefreshCcw size={18} className={loading ? "animate-spin" : ""} /> 
+          <RefreshCcw size={18} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} /> 
           {loading ? 'SYNCING...' : 'LIVE_UPDATE'}
         </button>
       </header>
 
-      {/* FULL-SCREEN DATA GRID */}
+      {/* DATA GRID */}
       {loading && pairs.length === 0 ? (
         <div style={{ textAlign: 'center', marginTop: '100px', color: '#64748b' }}>
           <Zap size={40} style={{ marginBottom: '20px' }} />
-          <p>SYNCHRONIZING WITH MAINNET...</p>
+          <p>SCANNING BLOCKCHAIN...</p>
         </div>
       ) : (
         <div style={{ 
@@ -104,8 +107,7 @@ export default function App() {
               border: '1px solid #334155',
               display: 'flex',
               flexDirection: 'column',
-              justifyContent: 'space-between',
-              transition: 'transform 0.2s'
+              justifyContent: 'space-between'
             }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
@@ -170,6 +172,14 @@ export default function App() {
           ))}
         </div>
       )}
+
+      {/* Adding a CSS animation for the sync icon */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
